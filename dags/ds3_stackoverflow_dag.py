@@ -269,6 +269,24 @@ def task_generate_training_data(**context):
         raise
 
 
+def task_export_to_interim(**context):
+    import shutil
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    input_path = DS3_TRAINING / "training_data.jsonl"
+    output_path = DATA_ROOT / "interim" / "ds3_stackoverflow.jsonl"
+    
+    if not input_path.exists():
+        raise FileNotFoundError(f"Input file not found: {input_path}")
+    
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(input_path, output_path)
+    
+    logger.info(f"Exported to interim: {output_path}")
+    return str(output_path)
+
+
 def task_dvc_version(**context):
     import logging
     from src.utils.dvc_utils import dvc_version_path
@@ -316,6 +334,7 @@ with dag:
     handle_failure = PythonOperator(task_id='handle_validation_failure', python_callable=task_handle_validation_failure)
     bias_detection = PythonOperator(task_id='detect_bias', python_callable=task_detect_bias)
     generate_training = PythonOperator(task_id='generate_training_data', python_callable=task_generate_training_data, trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS)
+    export_interim = PythonOperator(task_id='export_to_interim', python_callable=task_export_to_interim, trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS)
     dvc_version = PythonOperator(task_id='dvc_version', python_callable=task_dvc_version, trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS)
     end = PythonOperator(task_id='end_pipeline', python_callable=task_end_pipeline, trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS)
     join = EmptyOperator(task_id='join', trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS)
@@ -324,4 +343,4 @@ with dag:
     check_validation >> [bias_detection, handle_failure]
     bias_detection >> join
     handle_failure >> join
-    join >> generate_training >> dvc_version >> end
+    join >> generate_training >> export_interim >> dvc_version >> end

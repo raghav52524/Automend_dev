@@ -116,10 +116,12 @@ pipeline_start
 acquire_data ──► preprocess_data ──► validate_schema ──► schema_stats
                                                               │
                                                               ▼
-                          dvc_version ◄── bias_detection ◄── detect_anomalies
+      dvc_version ◄── export_to_interim ◄── bias_detection ◄── detect_anomalies
 ```
 
-Each individual DAG includes: acquisition → preprocessing → validation → statistics → anomaly detection → bias detection → DVC versioning.
+Each individual DAG includes: acquisition → preprocessing → validation → statistics → anomaly detection → bias detection → **export to interim** → DVC versioning.
+
+The `export_to_interim` task copies each dataset's processed output to the `data/interim/` directory in the standardized format expected by the combiners (Parquet for Track A, JSONL for Track B).
 
 ---
 

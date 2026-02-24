@@ -169,6 +169,23 @@ def ds4_synthetic_dag():
         return processed_path
 
     @task
+    def export_to_interim(processed_path: str):
+        import shutil
+        log = pipeline_logger.get_logger("ds4_dag.export_to_interim")
+        
+        input_path = Path(processed_path)
+        output_path = PROJECT_ROOT / "data" / "interim" / "ds4_synthetic.jsonl"
+        
+        if not input_path.exists():
+            raise FileNotFoundError(f"Input file not found: {input_path}")
+        
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(input_path, output_path)
+        
+        log.info("Exported to interim: %s", output_path)
+        return str(output_path)
+
+    @task
     def commit_and_push(_: str):
         log = pipeline_logger.get_logger("ds4_dag.commit_and_push")
         log.info("DVC add and push starting")
@@ -185,8 +202,9 @@ def ds4_synthetic_dag():
     t4 = format_data(t3)
     t5 = generate_schema_and_stats(t4)
     t6 = validate_and_alert(t5)
-    t7 = commit_and_push(t6)
-    t1 >> t2 >> t3 >> t4 >> t5 >> t6 >> t7
+    t7 = export_to_interim(t6)
+    t8 = commit_and_push(t7)
+    t1 >> t2 >> t3 >> t4 >> t5 >> t6 >> t7 >> t8
 
 
 dag = ds4_synthetic_dag()

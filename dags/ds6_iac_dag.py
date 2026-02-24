@@ -128,6 +128,23 @@ def task_bias(**ctx):
     return result
 
 
+def task_export_to_interim(**ctx):
+    import shutil
+    logger.info("Exporting DS6 The Stack to interim directory")
+    
+    input_path = DS6_PROCESSED / "training_records.jsonl"
+    output_path = DATA_ROOT / "interim" / "ds6_the_stack.jsonl"
+    
+    if not input_path.exists():
+        raise FileNotFoundError(f"Input file not found: {input_path}")
+    
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(input_path, output_path)
+    
+    logger.info("Exported to interim: %s", output_path)
+    return str(output_path)
+
+
 def task_dvc_version(**ctx):
     from src.utils.dvc_utils import dvc_version_path
     logger.info("DVC versioning DS6 The Stack processed output")
@@ -185,10 +202,16 @@ with DAG(
         doc_md="Slice imbalance report -> logs/bias_report.json",
     )
 
+    export_interim = PythonOperator(
+        task_id="export_to_interim",
+        python_callable=task_export_to_interim,
+        doc_md="Export processed data to data/interim/ for combiner",
+    )
+
     dvc_version = PythonOperator(
         task_id="dvc_version",
         python_callable=task_dvc_version,
         doc_md="Version processed output with DVC",
     )
 
-    download >> analyze >> preprocess >> validate >> anomaly >> bias >> dvc_version
+    download >> analyze >> preprocess >> validate >> anomaly >> bias >> export_interim >> dvc_version

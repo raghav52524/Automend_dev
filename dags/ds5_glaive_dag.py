@@ -158,6 +158,22 @@ with DAG(
         context["ti"].xcom_push(key="bias_findings", value=report["findings_count"])
         return report["findings_count"]
 
+    def task_export_to_interim(**context):
+        import shutil
+        logger.info("Exporting DS5 Glaive to interim directory")
+        
+        input_path = DS5_PROCESSED / "glaive_chatml.jsonl"
+        output_path = DATA_ROOT / "interim" / "ds5_glaive.jsonl"
+        
+        if not input_path.exists():
+            raise FileNotFoundError(f"Input file not found: {input_path}")
+        
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(input_path, output_path)
+        
+        logger.info("Exported to interim: %s", output_path)
+        return str(output_path)
+
     def task_dvc_versioning(**context):
         from src.utils.dvc_utils import dvc_version_path
         logger.info("DVC versioning DS5 Glaive processed output folder")
@@ -201,7 +217,8 @@ with DAG(
     t3_schema_validation = PythonOperator(task_id="schema_validation", python_callable=task_schema_validation)
     t4_anomaly_detection = PythonOperator(task_id="anomaly_detection", python_callable=task_anomaly_detection)
     t5_bias_detection = PythonOperator(task_id="bias_detection", python_callable=task_bias_detection)
-    t6_dvc_versioning = PythonOperator(task_id="dvc_versioning", python_callable=task_dvc_versioning)
-    t7_summary = PythonOperator(task_id="pipeline_summary", python_callable=task_pipeline_summary)
+    t6_export_interim = PythonOperator(task_id="export_to_interim", python_callable=task_export_to_interim)
+    t7_dvc_versioning = PythonOperator(task_id="dvc_versioning", python_callable=task_dvc_versioning)
+    t8_summary = PythonOperator(task_id="pipeline_summary", python_callable=task_pipeline_summary)
 
-    t1_acquisition >> t2_preprocessing >> t3_schema_validation >> t4_anomaly_detection >> t5_bias_detection >> t6_dvc_versioning >> t7_summary
+    t1_acquisition >> t2_preprocessing >> t3_schema_validation >> t4_anomaly_detection >> t5_bias_detection >> t6_export_interim >> t7_dvc_versioning >> t8_summary

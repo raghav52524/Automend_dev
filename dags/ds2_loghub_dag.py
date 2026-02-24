@@ -11,7 +11,8 @@ Tasks (in order):
   8.  validate_quality     — run all data quality checks (fails DAG if bad)
   9.  detect_bias          — data slicing bias analysis (informational)
  10.  format_response      — convert events to Format A sequences (7 labels, padded to 512)
- 11.  dvc_version          — version processed output with DVC
+ 11.  export_to_interim    — copy processed parquet to data/interim/ for combiner
+ 12.  dvc_version          — version processed output with DVC
 
 All tasks use PythonOperator calling the same functions used in standalone scripts,
 so the pipeline can also be run directly without Airflow.
@@ -208,6 +209,28 @@ def task_format_response():
     format_response()
 
 
+def task_export_to_interim():
+    _setup_ds2_path()
+    import shutil
+    from pathlib import Path
+    
+    project_root = Path("/opt/airflow")
+    if not (project_root / "src").exists():
+        project_root = Path(__file__).resolve().parent.parent
+    
+    input_path = project_root / "data" / "processed" / "ds2_loghub" / "data_ready" / "event_sequences.parquet"
+    output_path = project_root / "data" / "interim" / "ds2_loghub.parquet"
+    
+    if not input_path.exists():
+        raise FileNotFoundError(f"Input file not found: {input_path}")
+    
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(input_path, output_path)
+    
+    _alert_logger.info(f"Exported to interim: {output_path}")
+    return str(output_path)
+
+
 def task_dvc_version():
     _setup_ds2_path()
     from src.utils.dvc_utils import dvc_version_path
@@ -237,8 +260,9 @@ with dag:
     t_validate = PythonOperator(task_id="validate_quality", python_callable=task_validate_quality)
     t_bias = PythonOperator(task_id="detect_bias", python_callable=task_detect_bias, trigger_rule=TriggerRule.ALL_DONE)
     t_format_response = PythonOperator(task_id="format_response", python_callable=task_format_response, trigger_rule=TriggerRule.ALL_DONE)
+    t_export_interim = PythonOperator(task_id="export_to_interim", python_callable=task_export_to_interim)
     t_dvc_version = PythonOperator(task_id="dvc_version", python_callable=task_dvc_version)
 
     t_verify >> [t_norm_linux, t_norm_hpc, t_norm_hdfs, t_norm_hadoop, t_norm_spark]
     [t_norm_linux, t_norm_hpc, t_norm_hdfs, t_norm_hadoop, t_norm_spark] >> t_sample
-    t_sample >> t_filter_tmpl >> t_label >> t_stats >> t_agg >> t_validate >> t_bias >> t_format_response >> t_dvc_version
+    t_sample >> t_filter_tmpl >> t_label >> t_stats >> t_agg >> t_validate >> t_bias >> t_format_response >> t_export_interim >> t_dvc_version

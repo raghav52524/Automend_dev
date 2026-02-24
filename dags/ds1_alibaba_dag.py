@@ -1,7 +1,7 @@
 """
 Airflow DAG - Alibaba Cluster Trace 2017 Pipeline
 Track A: Trigger Engine (Anomaly Classification)
-acquire -> preprocess -> validate -> schema_stats -> detect_anomalies -> bias_detection -> dvc_version
+acquire -> preprocess -> validate -> schema_stats -> detect_anomalies -> bias_detection -> export_to_interim -> dvc_version
 
 Moved from src/dataset_1_alibaba/dags/alibaba_pipeline.py
 """
@@ -133,6 +133,11 @@ with DAG(
         print(f"[BIAS] Sequence bias: {report['sequence_bias']['bias_detected']}")
         print(f"[BIAS] Mitigation: {report['mitigation']['techniques_applied']}")
 
+    def export_interim():
+        from export_to_interim import export_to_interim
+        output_path = export_to_interim()
+        print(f"[EXPORT] Exported to interim: {output_path}")
+
     def dvc_version():
         from src.utils.dvc_utils import dvc_version_path
         logger.info("DVC versioning DS1 Alibaba processed output")
@@ -149,6 +154,7 @@ with DAG(
     t4 = PythonOperator(task_id="schema_stats", python_callable=schema_stats)
     t5 = PythonOperator(task_id="detect_anomalies", python_callable=anomaly_detect)
     t6 = PythonOperator(task_id="bias_detection", python_callable=bias_detect)
-    t7 = PythonOperator(task_id="dvc_version", python_callable=dvc_version)
+    t7 = PythonOperator(task_id="export_to_interim", python_callable=export_interim)
+    t8 = PythonOperator(task_id="dvc_version", python_callable=dvc_version)
 
-    t1 >> t2 >> t3 >> t4 >> t5 >> t6 >> t7
+    t1 >> t2 >> t3 >> t4 >> t5 >> t6 >> t7 >> t8
