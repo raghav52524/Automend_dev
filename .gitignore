@@ -102,12 +102,17 @@ Thumbs.db
 # Logs
 *.log
 logs/*.log
-logs/alerts_history.json
+logs/*.json
 
 # Data directories (tracked by DVC, not Git)
 data/raw/
 data/interim/
 data/processed/
+data/external/
+data/reports/
+
+# Legacy data directories inside dataset source folders
+src/dataset_*/data/
 
 # DVC local cache
 .dvc/cache/
@@ -127,3 +132,16 @@ airflow-webserver.pid
 *.db
 *.sqlite
 *.sqlite3
+
+# Great Expectations
+great_expectations/
+gx/
+.great_expectations/
+uncommitted/
+
+# Data files (should be DVC tracked, not Git)
+*.parquet
+*.jsonl
+*.csv
+!.env.example
+!requirements.txt
