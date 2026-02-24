@@ -129,18 +129,25 @@ Each individual DAG includes: acquisition → preprocessing → validation → s
 
 **Target Model**: BERT-based Sequence Classifier (LogBERT)
 
-**Goal**: Classify 5-minute windows of infrastructure activity into 5 states:
-- 0 = Normal
-- 1 = Resource_Exhaustion
-- 2 = System_Crash
-- 3 = Network_Failure
-- 4 = Data_Drift
+**Goal**: Classify 5-minute windows of infrastructure activity into anomaly classes:
+
+| Label | Class | Description | Source |
+|-------|-------|-------------|--------|
+| 0 | Normal | No anomaly detected | DS1, DS2 |
+| 1 | Resource_Exhaustion | High memory/CPU usage, OOM | DS1, DS2 |
+| 2 | System_Crash | Failed jobs, executor failures | DS1, DS2 |
+| 3 | Network_Failure | Timeout, unreachable hosts | DS1, DS2 |
+| 4 | Data_Drift | Checksum errors, verification failures | DS1, DS2 |
+| 5 | Auth_Failure | Authentication failures | DS2 only |
+| 6 | Permission_Denied | Access denied errors | DS2 only |
+
+**Note**: DS1 (Alibaba) produces labels 0-4, while DS2 (LogHub) produces labels 0-6. The combined Track A output includes all 7 classes.
 
 **Output Format (Format A)**:
 ```json
 {"sequence_ids": [402, 115, 99, 402], "label": 1}
 ```
-- **Schema**: Parquet with columns `sequence_ids` (List[int]) and `label` (int)
+- **Schema**: Parquet with columns `sequence_ids` (List[int]) and `label` (int 0-6)
 - **Final Output**: `data/processed/track_A_combined.parquet`
 
 #### Dataset 1: Alibaba Cluster Trace 2017
