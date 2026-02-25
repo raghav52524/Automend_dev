@@ -98,6 +98,8 @@ pipeline_start
                               track_A_combined.parquet
 ```
 
+![Master Track A DAG](screenshots/master_track_a.png)
+
 **Master Track B DAG** (`dags/master_track_b.py`):
 ```
 pipeline_start
@@ -111,6 +113,8 @@ pipeline_start
                                     track_B_combined.jsonl
 ```
 
+![Master Track B DAG](screenshots/master_track_b.png)
+
 **Individual Dataset DAG Tasks** (example for DS1):
 ```
 acquire_data ──► preprocess_data ──► validate_schema ──► schema_stats
@@ -118,6 +122,8 @@ acquire_data ──► preprocess_data ──► validate_schema ──► schem
                                                               ▼
       dvc_version ◄── export_to_interim ◄── bias_detection ◄── detect_anomalies
 ```
+
+![DS1 Alibaba DAG](screenshots/ds1_dag.png)
 
 Each individual DAG includes: acquisition → preprocessing → validation → statistics → anomaly detection → bias detection → **export to interim** → DVC versioning.
 
