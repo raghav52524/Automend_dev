@@ -97,8 +97,14 @@ def check_minimum_records(report: dict, minimum: int) -> tuple[bool, str]:
     return False, ""
 
 def run_anomaly_check() -> dict:
-    report_path = _ROOT / "logs/schema_report.json"
-    out_path    = _ROOT / "logs/anomaly_report.json"
+    try:
+        from src.config.paths import LOGS_DIR
+        report_path = LOGS_DIR / "schema_report.json"
+        out_path    = LOGS_DIR / "anomaly_report.json"
+        LOGS_DIR.mkdir(parents=True, exist_ok=True)
+    except ImportError:
+        report_path = _ROOT / "logs/schema_report.json"
+        out_path    = _ROOT / "logs/anomaly_report.json"
 
     assert report_path.exists(), \
         f"Schema report not found at {report_path} — run schema_stats.py first"

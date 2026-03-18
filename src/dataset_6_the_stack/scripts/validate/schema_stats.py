@@ -139,11 +139,19 @@ def compute_stats(records: list[dict]) -> dict:
     }
 
 def run_validation() -> dict:
+    import sys as _sys
     import yaml as _yaml
+    _sys.path.insert(0, str(_ROOT.parent.parent))
     cfg      = _yaml.safe_load((_ROOT / "config/iac_analysis.yaml").read_text())
-    in_path  = _ROOT / cfg["paths"]["processed_dir"] / "training_records.jsonl"
-    out_path = _ROOT / "logs/schema_report.json"
-    (_ROOT / "logs").mkdir(exist_ok=True)
+    try:
+        from src.config.paths import get_ds6_processed_dir, LOGS_DIR
+        in_path  = get_ds6_processed_dir() / "training_records.jsonl"
+        out_path = LOGS_DIR / "schema_report.json"
+        LOGS_DIR.mkdir(parents=True, exist_ok=True)
+    except ImportError:
+        in_path  = _ROOT / cfg["paths"]["processed_dir"] / "training_records.jsonl"
+        out_path = _ROOT / "logs/schema_report.json"
+        (_ROOT / "logs").mkdir(exist_ok=True)
 
     assert in_path.exists(), f"No training records at {in_path}"
     log.info("Validating %s", in_path)

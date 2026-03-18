@@ -185,7 +185,7 @@ def main():
     RAW_DIR.mkdir(parents=True, exist_ok=True)
     
     # Generate questions
-    questions = generate_questions(50)
+    questions = generate_questions(120)
     
     # Write questions CSV
     with open(QUESTIONS_FILE, "w", newline="", encoding="utf-8") as f:

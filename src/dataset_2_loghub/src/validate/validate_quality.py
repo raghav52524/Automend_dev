@@ -29,8 +29,9 @@ PROCESSED_DIR = get_ds2_processed_dir()
 EVENTS_PATH    = PROCESSED_DIR / "mlops_processed" / "mlops_events.parquet"
 TEMPLATES_PATH = PROCESSED_DIR / "mlops_processed" / "mlops_templates.csv"
 REPORT_PATH    = PROCESSED_DIR / "mlops_processed" / "validation_report.json"
+NORMALIZED_DIR = PROCESSED_DIR / "normalized"
 
-TOTAL_ROWS   = 10_000   # 5 systems × 2000 rows each
+SYSTEMS = ["linux", "hpc", "hdfs", "hadoop", "spark"]
 REQUIRED_COLS = [
     "system", "timestamp", "severity", "source",
     "event_id", "event_template", "message", "raw_id", "extras", "event_type",
@@ -107,12 +108,19 @@ def validate_quality(events_path: Path = EVENTS_PATH,
     else:
         ok("event_id_pattern", "All EventIds match E<digits> pattern")
 
-    # --- 5. Sampling sanity (5%–100%) ---
-    pct = len(df) / TOTAL_ROWS * 100
+    # --- 5. Sampling sanity (5%–100% of actual normalized total) ---
+    total_rows = 0
+    for system in SYSTEMS:
+        npath = NORMALIZED_DIR / f"{system}.parquet"
+        if npath.exists():
+            total_rows += len(read_parquet(str(npath)))
+    if total_rows == 0:
+        total_rows = len(df)
+    pct = len(df) / total_rows * 100
     if not (5 <= pct <= 100):
-        fail("sampling_sanity", f"Sampled {len(df)} rows = {pct:.1f}% (expected 5–100%)")
+        fail("sampling_sanity", f"Sampled {len(df)} rows = {pct:.1f}% of {total_rows} (expected 5–100%)")
     else:
-        ok("sampling_sanity", f"Sampled {len(df)} rows = {pct:.1f}% of {TOTAL_ROWS}")
+        ok("sampling_sanity", f"Sampled {len(df)} rows = {pct:.1f}% of {total_rows}")
 
     # --- 6. Template coverage ---
     tmpl_ids   = set(tmpl["EventId"].unique())

@@ -70,20 +70,16 @@ def seed_ds1() -> bool:
 
 
 def seed_ds2(download: bool = False) -> bool:
-    """Seed Dataset 2 (Loghub) - downloads from GitHub if requested."""
+    """Seed Dataset 2 (Loghub) - generates sample CSVs or downloads full data."""
     if download:
         return run_script(
             PROJECT_ROOT / "src" / "dataset_2_loghub" / "src" / "ingest" / "download_data.py",
             "DS2 (Loghub) - Download from GitHub"
         )
-    else:
-        print("\n" + "="*60)
-        print("DS2 (Loghub) - Skipping download (use --download to fetch)")
-        print("="*60)
-        print("  To download manually:")
-        print("    python src/dataset_2_loghub/src/ingest/download_data.py")
-        print("  Files will be saved to: data/raw/ds2_loghub/")
-        return True
+    return run_script(
+        PROJECT_ROOT / "src" / "dataset_2_loghub" / "scripts" / "seed_data.py",
+        "DS2 (Loghub) - Generate sample CSVs"
+    )
 
 
 def seed_ds3() -> bool:
@@ -121,22 +117,16 @@ def seed_ds5(download: bool = False) -> bool:
 
 
 def seed_ds6(download: bool = False) -> bool:
-    """Seed Dataset 6 (The Stack) - downloads from HuggingFace if requested."""
+    """Seed Dataset 6 (The Stack) - generates sample parquets or downloads full data."""
     if download:
         return run_script(
             PROJECT_ROOT / "src" / "dataset_6_the_stack" / "scripts" / "download" / "stack_iac_sample.py",
             "DS6 (The Stack) - Download from HuggingFace"
         )
-    else:
-        print("\n" + "="*60)
-        print("DS6 (The Stack) - Skipping download (use --download to fetch)")
-        print("="*60)
-        print("  To download manually:")
-        print("    python src/dataset_6_the_stack/scripts/download/stack_iac_sample.py")
-        print("  Requires: HuggingFace datasets library + network access")
-        print("  Optional: Set HF_TOKEN for gated datasets")
-        print("  Files will be saved to: data/raw/ds6_the_stack/")
-        return True
+    return run_script(
+        PROJECT_ROOT / "src" / "dataset_6_the_stack" / "scripts" / "seed_data.py",
+        "DS6 (The Stack) - Generate sample parquet chunks"
+    )
 
 
 def main():

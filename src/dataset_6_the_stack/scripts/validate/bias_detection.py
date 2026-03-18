@@ -257,10 +257,19 @@ def apply_mitigation(
     }
 
 def run_bias_detection() -> dict:
+    import sys as _sys
+    _sys.path.insert(0, str(_ROOT.parent.parent))
     cfg         = yaml.safe_load((_ROOT / "config/iac_analysis.yaml").read_text())
-    in_path     = _ROOT / cfg["paths"]["processed_dir"] / "training_records.jsonl"
-    balanced_path = _ROOT / cfg["paths"]["processed_dir"] / "training_records_balanced.jsonl"
-    out_path    = _ROOT / "logs/bias_report.json"
+    try:
+        from src.config.paths import get_ds6_processed_dir, LOGS_DIR
+        in_path       = get_ds6_processed_dir() / "training_records.jsonl"
+        balanced_path = get_ds6_processed_dir() / "training_records_balanced.jsonl"
+        out_path      = LOGS_DIR / "bias_report.json"
+        LOGS_DIR.mkdir(parents=True, exist_ok=True)
+    except ImportError:
+        in_path       = _ROOT / cfg["paths"]["processed_dir"] / "training_records.jsonl"
+        balanced_path = _ROOT / cfg["paths"]["processed_dir"] / "training_records_balanced.jsonl"
+        out_path      = _ROOT / "logs/bias_report.json"
 
     assert in_path.exists(), f"No training records at {in_path}"
     log.info("Loading records from %s", in_path)
